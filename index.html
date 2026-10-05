@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AR Washing Machine - Hiro Marker</title>
+
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;font-family:Arial,sans-serif}
+#control-panel{
+ position:fixed;left:50%;bottom:15px;transform:translateX(-50%);
+ width:94%;max-width:460px;padding:14px;border-radius:20px;
+ background:rgba(15,15,20,.9);color:#fff;text-align:center;
+ z-index:9999;box-shadow:0 5px 25px rgba(0,0,0,.4)
+}
+#status{font-size:18px;font-weight:bold;margin-bottom:6px}
+#speed{font-size:15px;color:#7ee7ff;margin-bottom:10px}
+.row{display:flex;gap:8px;justify-content:center;margin-top:8px}
+button{
+ flex:1;border:0;border-radius:12px;padding:12px 8px;
+ color:#fff;font-size:14px;font-weight:bold;cursor:pointer
+}
+button:active{transform:scale(.96)}
+.blue{background:#1677ff}.green{background:#16a34a}
+.orange{background:#f59e0b}.red{background:#e53935}
+#hint{font-size:11px;color:#bbb;margin-top:8px}
+</style>
+</head>
+
+<body>
+
+<a-scene
+ embedded
+ vr-mode-ui="enabled:false"
+ renderer="colorManagement:true; logarithmicDepthBuffer:true"
+ arjs="sourceType:webcam; debugUIEnabled:false; trackingMethod:best">
+
+ <a-marker id="hiro-marker" preset="hiro">
+
+   <!-- เครื่องซักผ้า -->
+   <a-entity id="washing-machine" position="0 0 0" scale="0.8 0.8 0.8">
+
+     <!-- ตัวเครื่อง -->
+     <a-box position="0 0.75 0"
+            width="1.5" height="1.5" depth="0.8"
+            color="#eeeeee"></a-box>
+
+     <!-- แผงควบคุม -->
+     <a-box position="0 1.25 0.43"
+            width="1.18" height="0.28" depth="0.05"
+            color="#222222"></a-box>
+
+     <!-- จอ -->
+     <a-text id="machine-display"
+             value="800 RPM"
+             position="0 1.25 0.46"
+             align="center"
+             width="1.2"
+             color="#00eaff"></a-text>
+
+     <!-- ปุ่มหมุน -->
+     <a-cylinder position="0.5 1.25 0.46"
+                  rotation="90 0 0"
+                  radius="0.09" height="0.05"
+                  color="#555"></a-cylinder>
+
+     <!-- ขอบประตู -->
+     <a-torus position="0 0.65 0.43"
+              rotation="90 0 0"
+              radius="0.38"
+              radius-tubular="0.07"
+              color="#333"></a-torus>
+
+     <!-- ประตู/กระจก -->
+     <a-cylinder id="door"
+                 position="0 0.65 0.47"
+                 rotation="90 0 0"
+                 radius="0.33"
+                 height="0.055"
+                 color="#527989"
+                 material="transparent:true;opacity:0.75;metalness:0.4;roughness:0.15">
+     </a-cylinder>
+
+     <!-- ถังซัก -->
+     <a-cylinder id="drum"
+                 position="0 0.65 0.50"
+                 rotation="90 0 0"
+                 radius="0.27"
+                 height="0.08"
+                 color="#888">
+     </a-cylinder>
+
+     <!-- ฐาน -->
+     <a-box position="0 0.03 0"
+            width="1.55" height="0.1" depth="0.85"
+            color="#cccccc"></a-box>
+
+   </a-entity>
+ </a-marker>
+
+ <a-entity camera></a-entity>
+</a-scene>
+
+<div id="control-panel">
+ <div id="status">📷 กำลังค้นหา Hiro Marker...</div>
+ <div id="speed">ความเร็วถังซัก: <span id="speed-value">800</span> RPM</div>
+
+ <div class="row">
+   <button class="orange" onclick="decreaseSpeed()">➖ ลดความเร็ว</button>
+   <button class="green" onclick="increaseSpeed()">➕ เพิ่มความเร็ว</button>
+ </div>
+
+ <div class="row">
+   <button class="blue" id="spinButton" onclick="toggleSpin()">▶️ เริ่มหมุน</button>
+   <button class="red" onclick="toggleDoor()">🚪 เปิด/ปิดฝา</button>
+ </div>
+
+ <div id="hint">ส่องกล้องไปที่ Hiro Marker</div>
+</div>
+
+<script>
+let speed = 800;
+let isSpinning = false;
+let doorOpen = false;
+let rotation = 0;
+
+const marker = document.getElementById("hiro-marker");
+const drum = document.getElementById("drum");
+const door = document.getElementById("door");
+const display = document.getElementById("machine-display");
+const speedValue = document.getElementById("speed-value");
+const spinButton = document.getElementById("spinButton");
+const statusText = document.getElementById("status");
+const hint = document.getElementById("hint");
+
+function updateSpeed(){
+ speedValue.textContent = speed;
+ display.setAttribute("value", speed + " RPM");
+}
+
+function increaseSpeed(){
+ if(speed < 1800) speed += 200;
+ updateSpeed();
+}
+
+function decreaseSpeed(){
+ if(speed > 200) speed -= 200;
+ updateSpeed();
+}
+
+function toggleSpin(){
+ isSpinning = !isSpinning;
+ spinButton.textContent = isSpinning ? "⏸️ หยุดหมุน" : "▶️ เริ่มหมุน";
+}
+
+function toggleDoor(){
+ doorOpen = !doorOpen;
+
+ if(doorOpen){
+   door.setAttribute(
+     "animation",
+     "property: position; to: 0 1.08 0.47; dur:600; easing:easeOutQuad"
+   );
+ }else{
+   door.setAttribute(
+     "animation",
+     "property: position; to: 0 0.65 0.47; dur:600; easing:easeOutQuad"
+   );
+ }
+}
+
+function animate(){
+ if(isSpinning){
+   rotation += speed / 60;
+
+   if(rotation >= 360) rotation -= 360;
+
+   drum.object3D.rotation.z =
+     THREE.MathUtils.degToRad(rotation);
+ }
+ requestAnimationFrame(animate);
+}
+animate();
+
+marker.addEventListener("markerFound", function(){
+ statusText.textContent = "🧺 พบเครื่องซักผ้าแล้ว";
+ hint.textContent = "สามารถควบคุมความเร็วและเปิด/ปิดฝาได้";
+});
+
+marker.addEventListener("markerLost", function(){
+ statusText.textContent = "📷 กำลังค้นหา Hiro Marker...";
+ hint.textContent = "ส่องกล้องไปที่ Hiro Marker";
+});
+
+updateSpeed();
+</script>
+
+</body>
+</html>
